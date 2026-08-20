@@ -1,0 +1,58 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Employee {
+  id         String    @id @default(cuid())
+  company_id String
+  name       String
+  email      String    @unique
+  sessions   Session[]
+  created_at DateTime  @default(now())
+}
+
+model Session {
+  id                          String    @id
+  employee_id                 String
+  company_id                  String
+  source                      String    @default("antigravity")
+  started_at                  DateTime  @default(now())
+  ended_at                    DateTime?
+  total_messages              Int       @default(0)
+  estimated_tokens            Int       @default(0)
+  potentially_avoidable_tokens Int      @default(0)
+  efficiency_score            Float     @default(0)
+  employee                    Employee  @relation(fields: [employee_id], references: [id])
+  messages                    Message[]
+  analysis                    Analysis?
+}
+
+model Message {
+  id               String   @id @default(cuid())
+  session_id       String
+  role             String   // "user" | "assistant"
+  content          String
+  timestamp        DateTime @default(now())
+  estimated_tokens Int      @default(0)
+  session          Session  @relation(fields: [session_id], references: [id], onDelete: Cascade)
+}
+
+model Analysis {
+  id               String   @id @default(cuid())
+  session_id       String   @unique
+  efficiency_score Float    @default(0)
+  waste_score      Float    @default(0)
+  issues           Json     @default("[]")
+  recommendations  Json     @default("[]")
+  created_at       DateTime @default(now())
+  session          Session  @relation(fields: [session_id], references: [id], onDelete: Cascade)
+}
